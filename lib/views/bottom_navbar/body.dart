@@ -19,7 +19,7 @@ class _NavBodyState extends State<NavBody> {
   final List<Widget> _children = [
     InstagramAuthView(),
     DownloadView(),
-    const StorySaverView(),
+    StorySaverView(),
     const HistoryView(),
     const SettingsView()
   ];
