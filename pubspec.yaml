@@ -39,6 +39,7 @@ dependencies:
   get: ^4.6.3
   flutter_downloader: ^1.7.4
   permission_handler: ^9.2.0
+  shared_preferences: ^2.0.15
 
 dev_dependencies:
   flutter_test:

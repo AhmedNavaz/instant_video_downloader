@@ -12,8 +12,8 @@ class InstagramAuthView extends StatefulWidget {
 class _InstagramAuthViewState extends State<InstagramAuthView> {
   bool _isObscure = true;
   final _formKey = GlobalKey<FormState>();
-  TextEditingController _usernameController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   AuthController authController = Get.put(AuthController());
 
@@ -21,7 +21,7 @@ class _InstagramAuthViewState extends State<InstagramAuthView> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text(" "),
+          title: const Text(" "),
           elevation: 0,
           backgroundColor: Colors.transparent,
         ),

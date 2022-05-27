@@ -11,7 +11,9 @@ import 'package:http/http.dart' as http;
 import 'package:instant_video_downloader/constants/controller.dart';
 import 'package:instant_video_downloader/constants/uri.dart';
 import 'package:instant_video_downloader/controllers/search_controller.dart';
+import 'package:instant_video_downloader/models/post.dart';
 import 'package:instant_video_downloader/router/router_generator.dart';
+import 'package:instant_video_downloader/services/shared_pref.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class DownloadView extends StatefulWidget {
@@ -28,18 +30,15 @@ class _DownloadViewState extends State<DownloadView> {
   SearchController searchController = Get.put(SearchController());
 
   final _formKey = GlobalKey<FormState>();
+  SharedPref sharedPref = Get.put(SharedPref());
+
   bool isSearching = false;
   bool isPasted = false;
   bool isGettingPost = false;
   bool noThanks = false;
-  ReceivePort _port = ReceivePort();
+  final ReceivePort _port = ReceivePort();
 
-  String? postUrl;
-  String? postTitle;
-  String? postThumbnail;
-  double? postDuration;
-  String? username;
-  String? profilePic;
+  final Post _post = Post();
 
   Future<String?> getDP(String userName) async {
     try {
@@ -67,14 +66,14 @@ class _DownloadViewState extends State<DownloadView> {
       );
       Map<String, dynamic> jsonResponse = await jsonDecode(response.body);
       setState(() {
-        postThumbnail = jsonResponse["node"]["display_url"];
-        postTitle = jsonResponse["node"]["edge_media_to_caption"]["edges"][0]
-            ["node"]["text"];
-        postTitle = postTitle!.substring(0, min(postTitle!.length, 50));
-        postDuration = jsonResponse["node"]["video_duration"];
-        username = jsonResponse["node"]["owner"]["username"];
-        profilePic = jsonResponse["node"]["owner"]["profile_pic_url"];
-        postUrl = jsonResponse["node"]["video_url"];
+        _post.thumbnail = jsonResponse["node"]["display_url"];
+        String? postTitle = jsonResponse["node"]["edge_media_to_caption"]
+            ["edges"][0]["node"]["text"];
+        _post.title = postTitle!.substring(0, min(postTitle!.length, 50));
+        _post.duration = jsonResponse["node"]["video_duration"];
+        _post.username = jsonResponse["node"]["owner"]["username"];
+        _post.profilePic = jsonResponse["node"]["owner"]["profile_pic_url"];
+        _post.url = jsonResponse["node"]["video_url"];
       });
     } catch (e) {
       print("No user found!");
@@ -96,6 +95,7 @@ class _DownloadViewState extends State<DownloadView> {
       print("No user found!");
       return e.toString();
     }
+    return null;
   }
 
   @override
@@ -139,7 +139,7 @@ class _DownloadViewState extends State<DownloadView> {
         setState(() {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("Downloading..."),
-            padding: const EdgeInsets.only(bottom: 20, top: 10),
+            padding: EdgeInsets.only(left: 10, bottom: 20, top: 10),
           ));
         });
       });
@@ -236,7 +236,9 @@ class _DownloadViewState extends State<DownloadView> {
                                 ElevatedButton(
                                   onPressed: () {
                                     if (_formKey.currentState!.validate()) {
-                                      download(postUrl);
+                                      download(_post.url);
+                                      sharedPref
+                                          .addPostListToSharedPrefs(_post);
                                     }
                                   },
                                   child: const Text("Download",
@@ -459,7 +461,7 @@ class _DownloadViewState extends State<DownloadView> {
                                         ),
                                         image: DecorationImage(
                                             image: NetworkImage(
-                                                postThumbnail ?? ""),
+                                                _post.thumbnail ?? ""),
                                             fit: BoxFit.cover),
                                       ),
                                     ),
@@ -474,9 +476,9 @@ class _DownloadViewState extends State<DownloadView> {
                                                   const EdgeInsets.symmetric(
                                                       horizontal: 10),
                                               child: Text(
-                                                  postDuration == null
+                                                  _post.duration == null
                                                       ? ''
-                                                      : postDuration
+                                                      : _post.duration
                                                           .toString()
                                                           .split('.')[0],
                                                   style: const TextStyle(
@@ -505,7 +507,7 @@ class _DownloadViewState extends State<DownloadView> {
                                               child: CircleAvatar(
                                                 radius: 15,
                                                 backgroundImage: NetworkImage(
-                                                    profilePic ?? ''),
+                                                    _post.profilePic ?? ''),
                                                 backgroundColor:
                                                     Colors.transparent,
                                               ),
@@ -514,7 +516,7 @@ class _DownloadViewState extends State<DownloadView> {
                                               padding: const EdgeInsets.only(
                                                   bottom: 10),
                                               child: Text(
-                                                '@$username',
+                                                '@${_post.username}',
                                                 style: const TextStyle(
                                                     color: Colors.black,
                                                     fontSize: 16,
@@ -525,7 +527,7 @@ class _DownloadViewState extends State<DownloadView> {
                                           ],
                                         ),
                                         Text(
-                                          postTitle ?? "",
+                                          _post.title ?? "",
                                           style: const TextStyle(fontSize: 16),
                                         ),
                                       ],
@@ -594,7 +596,7 @@ class _DownloadViewState extends State<DownloadView> {
                   onPressed: () {
                     login();
                   },
-                  child: Text("Login")),
+                  child: const Text("Login")),
             ],
           ),
         ),

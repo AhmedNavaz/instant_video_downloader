@@ -18,9 +18,9 @@ class NavBody extends StatefulWidget {
 class _NavBodyState extends State<NavBody> {
   final List<Widget> _children = [
     InstagramAuthView(),
-    DownloadView(),
+    const DownloadView(),
     StorySaverView(),
-    const HistoryView(),
+    HistoryView(),
     const SettingsView()
   ];
   final List<PersistentBottomNavBarItem> _navBarItems = [
