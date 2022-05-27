@@ -1,6 +1,6 @@
 // STATIC ROUTES NAME
 import 'package:flutter/material.dart';
-import 'package:instant_video_downloader/views/authentication/instagram_auth_view.dart';
+import 'package:instant_video_downloader/views/bottom_navbar/instagram_auth_view.dart';
 import 'package:instant_video_downloader/views/bottom_navbar/body.dart';
 import 'package:instant_video_downloader/views/download/download_page.dart';
 

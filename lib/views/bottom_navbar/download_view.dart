@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:get/get.dart';
 import 'package:instant_video_downloader/constants/colors.dart';
@@ -28,10 +29,17 @@ class _DownloadViewState extends State<DownloadView> {
 
   final _formKey = GlobalKey<FormState>();
   bool isSearching = false;
+  bool isPasted = false;
+  bool isGettingPost = false;
+  bool noThanks = false;
   ReceivePort _port = ReceivePort();
 
+  String? postUrl;
   String? postTitle;
   String? postThumbnail;
+  double? postDuration;
+  String? username;
+  String? profilePic;
 
   Future<String?> getDP(String userName) async {
     try {
@@ -51,7 +59,7 @@ class _DownloadViewState extends State<DownloadView> {
     }
   }
 
-  Future<String?> generateDownloadLink(String? url) async {
+  Future<void> generateDownloadLink(String? url) async {
     try {
       http.Response response = await client.post(
         Uri.parse('${LOCALHOST}post'),
@@ -63,11 +71,13 @@ class _DownloadViewState extends State<DownloadView> {
         postTitle = jsonResponse["node"]["edge_media_to_caption"]["edges"][0]
             ["node"]["text"];
         postTitle = postTitle!.substring(0, min(postTitle!.length, 50));
+        postDuration = jsonResponse["node"]["video_duration"];
+        username = jsonResponse["node"]["owner"]["username"];
+        profilePic = jsonResponse["node"]["owner"]["profile_pic_url"];
+        postUrl = jsonResponse["node"]["video_url"];
       });
-      return jsonResponse["node"]["video_url"];
     } catch (e) {
       print("No user found!");
-      return e.toString();
     }
   }
 
@@ -143,6 +153,11 @@ class _DownloadViewState extends State<DownloadView> {
     return fileName;
   }
 
+  Future<String?> _getClipboardText() async {
+    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    return clipboardData?.text;
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -156,7 +171,7 @@ class _DownloadViewState extends State<DownloadView> {
             indicatorColor: kPrimaryColor,
             tabs: [
               Tab(text: 'Post/Video'),
-              Tab(text: 'Profile Picture'),
+              Tab(text: 'DP'),
               Tab(text: 'Profile'),
             ],
           ),
@@ -195,7 +210,19 @@ class _DownloadViewState extends State<DownloadView> {
                               children: [
                                 ElevatedButton(
                                   onPressed: () {
-                                    login();
+                                    setState(() {
+                                      isPasted = true;
+                                      isGettingPost = true;
+                                    });
+
+                                    _getClipboardText().then((value) {
+                                      postUrlController.text = value!;
+                                      generateDownloadLink(value).then((value) {
+                                        setState(() {
+                                          isGettingPost = false;
+                                        });
+                                      });
+                                    });
                                   },
                                   child: const Text("Paste Link",
                                       style: TextStyle(
@@ -209,11 +236,7 @@ class _DownloadViewState extends State<DownloadView> {
                                 ElevatedButton(
                                   onPressed: () {
                                     if (_formKey.currentState!.validate()) {
-                                      generateDownloadLink(
-                                              postUrlController.text)
-                                          .then((value) {
-                                        download(value);
-                                      });
+                                      download(postUrl);
                                     }
                                   },
                                   child: const Text("Download",
@@ -412,87 +435,161 @@ class _DownloadViewState extends State<DownloadView> {
                   ],
                 ),
               ),
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                elevation: 5,
-                margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 150,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(10),
-                          bottomLeft: Radius.circular(10),
-                        ),
-                        image: DecorationImage(
-                            image: NetworkImage(postThumbnail ?? ""),
-                            fit: BoxFit.cover),
+              isPasted
+                  ? Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    ),
-                    Expanded(
+                      elevation: 5,
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 10),
+                      child: isGettingPost
+                          ? const Center(child: CircularProgressIndicator())
+                          : Row(
+                              children: [
+                                Stack(
+                                  children: [
+                                    Container(
+                                      width: 150,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(10),
+                                          bottomLeft: Radius.circular(10),
+                                        ),
+                                        image: DecorationImage(
+                                            image: NetworkImage(
+                                                postThumbnail ?? ""),
+                                            fit: BoxFit.cover),
+                                      ),
+                                    ),
+                                    Positioned.fill(
+                                      child: Align(
+                                        alignment: Alignment.bottomLeft,
+                                        child: Container(
+                                            color:
+                                                Colors.black.withOpacity(0.5),
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 10),
+                                              child: Text(
+                                                  postDuration == null
+                                                      ? ''
+                                                      : postDuration
+                                                          .toString()
+                                                          .split('.')[0],
+                                                  style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 16)),
+                                            )),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 5),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  bottom: 10, right: 5),
+                                              child: CircleAvatar(
+                                                radius: 15,
+                                                backgroundImage: NetworkImage(
+                                                    profilePic ?? ''),
+                                                backgroundColor:
+                                                    Colors.transparent,
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  bottom: 10),
+                                              child: Text(
+                                                '@$username',
+                                                style: const TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 16,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Text(
+                                          postTitle ?? "",
+                                          style: const TextStyle(fontSize: 16),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                    )
+                  : Container(),
+              noThanks
+                  ? Container()
+                  : Card(
+                      margin: const EdgeInsets.all(10),
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 5),
-                        child: Text(
-                          postTitle ?? "",
-                          style: const TextStyle(fontSize: 18),
+                        padding: const EdgeInsets.all(15),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'Loving this app?',
+                              style: TextStyle(fontSize: 20),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Rate us on the play store to support us.',
+                              style: TextStyle(fontSize: 15),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: const [
+                                Icon(Icons.star),
+                                Icon(Icons.star),
+                                Icon(Icons.star),
+                                Icon(Icons.star),
+                                Icon(Icons.star),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                ElevatedButton(
+                                  child: const Text('No Thanks'),
+                                  onPressed: () {
+                                    setState(() {
+                                      noThanks = true;
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                      primary: Colors.grey),
+                                ),
+                                ElevatedButton(
+                                  child: const Text('Rate us'),
+                                  onPressed: () {},
+                                  style: ElevatedButton.styleFrom(
+                                      primary: kAccentColor),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              Card(
-                margin: const EdgeInsets.all(10),
-                child: Padding(
-                  padding: const EdgeInsets.all(15),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Loving this app?',
-                        style: TextStyle(fontSize: 20),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Rate us on the play store to support us.',
-                        style: TextStyle(fontSize: 15),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: const [
-                          Icon(Icons.star),
-                          Icon(Icons.star),
-                          Icon(Icons.star),
-                          Icon(Icons.star),
-                          Icon(Icons.star),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          ElevatedButton(
-                            child: const Text('No Thanks'),
-                            onPressed: () {},
-                            style:
-                                ElevatedButton.styleFrom(primary: Colors.grey),
-                          ),
-                          ElevatedButton(
-                            child: const Text('Rate us'),
-                            onPressed: () {},
-                            style:
-                                ElevatedButton.styleFrom(primary: kAccentColor),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               ElevatedButton(
                   onPressed: () {
                     login();

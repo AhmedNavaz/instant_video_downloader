@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:instant_video_downloader/constants/colors.dart';
-import 'package:instant_video_downloader/views/authentication/instagram_auth_view.dart';
+import 'package:instant_video_downloader/views/bottom_navbar/instagram_auth_view.dart';
 import 'package:instant_video_downloader/views/bottom_navbar/download_view.dart';
 import 'package:instant_video_downloader/views/bottom_navbar/history_view.dart';
 import 'package:instant_video_downloader/views/bottom_navbar/settings_view.dart';
@@ -25,7 +25,7 @@ class _NavBodyState extends State<NavBody> {
   ];
   final List<PersistentBottomNavBarItem> _navBarItems = [
     PersistentBottomNavBarItem(
-      icon: const Icon(Icons.settings),
+      icon: const Icon(Icons.login),
       title: 'Instagram',
       inactiveColorPrimary: Colors.black,
       activeColorPrimary: kPrimaryColor,
