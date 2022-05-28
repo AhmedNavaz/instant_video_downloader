@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:instant_video_downloader/views/bottom_navbar/instagram_auth_view.dart';
 import 'package:instant_video_downloader/views/bottom_navbar/body.dart';
 import 'package:instant_video_downloader/views/download/download_page.dart';
+import 'package:instant_video_downloader/views/profile/profile_view.dart';
 
 const String root = '/';
 const String downloadPage = '/download-page';
 const String instagramAuth = '/instagram-auth';
+const String profileView = '/profile-view';
 
 // ignore: todo
 // TODO : ROUTES GENERATOR CLASS THAT CONTROLS THE FLOW OF NAVIGATION/ROUTING
@@ -27,6 +29,9 @@ class RouteGenerator {
 
       case instagramAuth:
         return _getPageRoute(InstagramAuthView());
+
+      case profileView:
+        return _getPageRoute(ProfileView());
 
       default:
         return _errorRoute();

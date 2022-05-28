@@ -41,4 +41,13 @@ class SharedPref extends GetxController {
     }
     return jsonList.map((json) => Post.fromJson(jsonDecode(json))).toList();
   }
+
+  Future<void> removePostFromSharedPrefs(String? id) async {
+    getPostListFromSharedPrefs().then((value) {
+      _instance._postList = value;
+      _instance._postList!.removeWhere((element) => element.id == id);
+      _instance.pref.setStringList('posts',
+          _instance._postList!.map((e) => jsonEncode(e.toJson())).toList());
+    });
+  }
 }

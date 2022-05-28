@@ -26,6 +26,7 @@ class DownloadView extends StatefulWidget {
 class _DownloadViewState extends State<DownloadView> {
   http.Client get client => http.Client();
   TextEditingController userNameController = TextEditingController();
+  TextEditingController userNameController2 = TextEditingController();
   TextEditingController postUrlController = TextEditingController();
   SearchController searchController = Get.put(SearchController());
 
@@ -67,9 +68,8 @@ class _DownloadViewState extends State<DownloadView> {
       Map<String, dynamic> jsonResponse = await jsonDecode(response.body);
       setState(() {
         _post.thumbnail = jsonResponse["node"]["display_url"];
-        String? postTitle = jsonResponse["node"]["edge_media_to_caption"]
-            ["edges"][0]["node"]["text"];
-        _post.title = postTitle!.substring(0, min(postTitle!.length, 50));
+        _post.title = jsonResponse["node"]["edge_media_to_caption"]["edges"][0]
+            ["node"]["text"];
         _post.duration = jsonResponse["node"]["video_duration"];
         _post.username = jsonResponse["node"]["owner"]["username"];
         _post.profilePic = jsonResponse["node"]["owner"]["profile_pic_url"];
@@ -352,7 +352,7 @@ class _DownloadViewState extends State<DownloadView> {
                           children: [
                             Expanded(
                               child: TextFormField(
-                                controller: userNameController,
+                                controller: userNameController2,
                                 onChanged: (value) {
                                   setState(() {
                                     isSearching = true;
@@ -374,13 +374,13 @@ class _DownloadViewState extends State<DownloadView> {
                             ElevatedButton(
                               onPressed: () async {
                                 if (_formKey.currentState!.validate()) {
-                                  await getDP(userNameController.text).then(
+                                  await getDP(userNameController2.text).then(
                                     (value) {
                                       setState(() {
-                                        searchController.profileImage.value =
+                                        searchController.profileImage2.value =
                                             value!;
-                                        searchController.userName.value =
-                                            userNameController.text;
+                                        searchController.userName2.value =
+                                            userNameController2.text;
                                       });
                                       isSearching = false;
                                       return null;
@@ -410,7 +410,7 @@ class _DownloadViewState extends State<DownloadView> {
                                 InkWell(
                                   onTap: () {
                                     navigationController
-                                        .navigateTo(downloadPage);
+                                        .navigateTo(profileView);
                                   },
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
@@ -419,7 +419,7 @@ class _DownloadViewState extends State<DownloadView> {
                                       radius: 50,
                                       backgroundColor: kAccentColor,
                                       backgroundImage: NetworkImage(
-                                          searchController.profileImage
+                                          searchController.profileImage2
                                               .toString(),
                                           scale: 1),
                                     ),
@@ -427,7 +427,7 @@ class _DownloadViewState extends State<DownloadView> {
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
-                                  '@${userNameController.text}',
+                                  '@${userNameController2.text}',
                                   style: const TextStyle(
                                       color: Colors.white70, fontSize: 16),
                                 ),
@@ -527,7 +527,8 @@ class _DownloadViewState extends State<DownloadView> {
                                           ],
                                         ),
                                         Text(
-                                          _post.title ?? "",
+                                          _post.title!.substring(
+                                              0, min(_post.title!.length, 50)),
                                           style: const TextStyle(fontSize: 16),
                                         ),
                                       ],

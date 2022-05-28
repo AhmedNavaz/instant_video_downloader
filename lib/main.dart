@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 import 'package:instant_video_downloader/constants/controller.dart';
 import 'package:instant_video_downloader/controllers/navigation_controller.dart';
 import 'package:instant_video_downloader/router/router_generator.dart';
+import 'package:instant_video_downloader/services/shared_pref.dart';
 
 void main() {
   Get.put(NavigationController());
   WidgetsFlutterBinding.ensureInitialized();
+  SharedPref.init();
   runApp(const MyApp());
 }
 
