@@ -1,6 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:instant_video_downloader/constants/colors.dart';
+import 'package:instant_video_downloader/constants/uri.dart';
 import 'package:instant_video_downloader/controllers/authController.dart';
+import 'package:http/http.dart' as http;
 
 class InstagramAuthView extends StatefulWidget {
   InstagramAuthView({Key? key}) : super(key: key);
@@ -10,12 +15,31 @@ class InstagramAuthView extends StatefulWidget {
 }
 
 class _InstagramAuthViewState extends State<InstagramAuthView> {
+  http.Client get client => http.Client();
   bool _isObscure = true;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   AuthController authController = Get.put(AuthController());
+
+  Future<String?> login() async {
+    try {
+      http.Response response = await client.post(
+        Uri.parse('${LOCALHOST}login'),
+        body: {
+          "username": "itchaboey",
+          "password": "g6g)6/F8T&C&@N\$",
+        },
+      );
+      Map<String, dynamic> jsonResponse = await jsonDecode(response.body);
+      print(jsonResponse);
+    } catch (e) {
+      print("No user found!");
+      return e.toString();
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,12 +142,34 @@ class _InstagramAuthViewState extends State<InstagramAuthView> {
                         ElevatedButton(
                           onPressed: () {
                             setState(() {
-                              authController.isLoggedIn.value = true;
+                              login();
+                              // authController.isLoggedIn.value = true;
                             });
                           },
-                          child: const Text("Log In"),
+                          child: Ink(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                              gradient: const LinearGradient(
+                                colors: [
+                                  kPrimaryColor,
+                                  kSecondaryColor,
+                                  kAccentColor,
+                                  kGradientColor,
+                                ],
+                              ),
+                            ),
+                            child: Container(
+                              constraints: const BoxConstraints(
+                                  minWidth: 400, minHeight: 60),
+                              child: const Center(
+                                  child: Text("Log In",
+                                      style: TextStyle(fontSize: 20))),
+                            ),
+                          ),
                           style: ElevatedButton.styleFrom(
-                              fixedSize: const Size(400, 60)),
+                            elevation: 0,
+                            primary: Colors.white,
+                          ),
                         )
                       ],
                     ),

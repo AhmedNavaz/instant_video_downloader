@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:isolate';
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:get/get.dart';
 import 'package:instant_video_downloader/constants/colors.dart';
 import 'package:instant_video_downloader/constants/uri.dart';
@@ -7,6 +10,7 @@ import 'package:instant_video_downloader/controllers/search_controller.dart';
 import 'package:instant_video_downloader/models/profile.dart';
 import 'package:http/http.dart' as http;
 import 'package:numeral/numeral.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ProfileView extends StatefulWidget {
   const ProfileView({
@@ -22,6 +26,7 @@ class _ProfileViewState extends State<ProfileView> {
   Profile userProfile = Profile();
   SearchController searchController = Get.find<SearchController>();
   bool isLoading = false;
+  final ReceivePort _port = ReceivePort();
 
   @override
   void initState() {
@@ -31,6 +36,17 @@ class _ProfileViewState extends State<ProfileView> {
         isLoading = false;
       });
     });
+
+    IsolateNameServer.registerPortWithName(
+        _port.sendPort, 'downloader_send_port');
+    _port.listen((dynamic data) {
+      String id = data[0];
+      DownloadTaskStatus status = data[1];
+      int progress = data[2];
+      setState(() {});
+    });
+
+    FlutterDownloader.registerCallback(downloadCallback);
     super.initState();
   }
 
@@ -56,6 +72,46 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   @override
+  void dispose() {
+    IsolateNameServer.removePortNameMapping('downloader_send_port');
+    super.dispose();
+  }
+
+  static void downloadCallback(
+      String id, DownloadTaskStatus status, int progress) {
+    final SendPort send =
+        IsolateNameServer.lookupPortByName('downloader_send_port')!;
+    send.send([id, status, progress]);
+  }
+
+  void download(String? url) async {
+    final status = await Permission.storage.request();
+    if (status.isGranted) {
+      await FlutterDownloader.enqueue(
+              url: url!,
+              savedDir: '/storage/emulated/0/Download',
+              showNotification: true,
+              openFileFromNotification: true,
+              fileName: setFileName(url))
+          .then((value) {
+        setState(() {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Downloading..."),
+            padding: EdgeInsets.only(left: 10, bottom: 20, top: 10),
+          ));
+        });
+      });
+    }
+  }
+
+  String setFileName(String? url) {
+    String fileName = url!;
+    fileName =
+        fileName.substring(fileName.lastIndexOf('/') + 1).split('?').first;
+    return fileName;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -63,7 +119,10 @@ class _ProfileViewState extends State<ProfileView> {
         backgroundColor: kPrimaryColor,
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+              color: kGradientColor,
+            ))
           : Padding(
               padding: const EdgeInsets.only(top: 20, right: 10, left: 10),
               child: Column(
@@ -82,7 +141,7 @@ class _ProfileViewState extends State<ProfileView> {
                           Padding(
                             padding: const EdgeInsets.only(top: 10),
                             child: Text(userProfile.fullName ?? '',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                 )),
                           ),
@@ -91,23 +150,25 @@ class _ProfileViewState extends State<ProfileView> {
                       Column(
                         children: [
                           Text(Numeral(userProfile.followers!).format(),
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 20, fontWeight: FontWeight.bold)),
-                          Text('Followers', style: TextStyle(fontSize: 20)),
+                          const Text('Followers',
+                              style: TextStyle(fontSize: 20)),
                         ],
                       ),
                       Column(
                         children: [
                           Text(Numeral(userProfile.following!).format(),
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 20, fontWeight: FontWeight.bold)),
-                          Text('Following', style: TextStyle(fontSize: 20)),
+                          const Text('Following',
+                              style: TextStyle(fontSize: 20)),
                         ],
                       ),
                     ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text("Posts",
                         style: TextStyle(
                             fontSize: 24, fontWeight: FontWeight.bold)),
@@ -123,16 +184,49 @@ class _ProfileViewState extends State<ProfileView> {
                       ),
                       itemCount: userProfile.posts!.length,
                       itemBuilder: (context, index) {
-                        return FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Image.network(
-                              userProfile.posts![index]['thumbnail'] ?? '',
-                              scale: 1),
-                        );
+                        return Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              image: DecorationImage(
+                                image: NetworkImage(
+                                    userProfile.posts![index]['thumbnail'],
+                                    scale: 1),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                InkWell(
+                                  onTap: () {
+                                    if (userProfile.posts![index]['type'] ==
+                                        'video') {
+                                      download(userProfile.posts![index]
+                                          ['video_url']);
+                                    } else {
+                                      download(userProfile.posts![index]
+                                          ['thumbnail']);
+                                    }
+                                  },
+                                  child: const Align(
+                                    alignment: Alignment.topRight,
+                                    child: Icon(Icons.download_rounded,
+                                        color: Colors.white, size: 30),
+                                  ),
+                                ),
+                                userProfile.posts![index]['type'] == "video"
+                                    ? const Align(
+                                        alignment: Alignment.bottomLeft,
+                                        child: Icon(Icons.play_arrow_rounded,
+                                            color: Colors.white, size: 40),
+                                      )
+                                    : Container(),
+                              ],
+                            ));
                       },
                     ),
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),

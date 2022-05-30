@@ -2,6 +2,7 @@ import 'dart:isolate';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:instant_video_downloader/constants/colors.dart';
 import 'package:instant_video_downloader/controllers/search_controller.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -78,6 +79,7 @@ class _DownloadPageState extends State<DownloadPage> {
     return Scaffold(
         appBar: AppBar(
           title: Text('@${searchController.userName.toString()}'),
+          backgroundColor: kPrimaryColor,
         ),
         body: SingleChildScrollView(
           child: Column(
@@ -95,7 +97,13 @@ class _DownloadPageState extends State<DownloadPage> {
                         });
                         download();
                       },
-                      child: const Text('Download'))
+                      child: const Text('Download'),
+                      style: ElevatedButton.styleFrom(
+                        primary: kAccentColor,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
             ],
           ),
         ));

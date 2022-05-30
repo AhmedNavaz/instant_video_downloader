@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:instant_video_downloader/constants/colors.dart';
 import 'package:instant_video_downloader/views/bottom_navbar/instagram_auth_view.dart';
 import 'package:instant_video_downloader/views/bottom_navbar/download_view.dart';
@@ -27,32 +28,32 @@ class _NavBodyState extends State<NavBody> {
     PersistentBottomNavBarItem(
       icon: const Icon(Icons.login),
       title: 'Instagram',
-      inactiveColorPrimary: Colors.black,
-      activeColorPrimary: kPrimaryColor,
+      inactiveColorPrimary: Colors.white,
+      activeColorPrimary: Colors.white,
     ),
     PersistentBottomNavBarItem(
       icon: const Icon(Icons.download),
       title: 'Download',
-      inactiveColorPrimary: Colors.black,
-      activeColorPrimary: kPrimaryColor,
+      inactiveColorPrimary: Colors.white,
+      activeColorPrimary: Colors.white,
     ),
     PersistentBottomNavBarItem(
       icon: const Icon(Icons.downloading),
       title: 'Story Saver',
-      inactiveColorPrimary: Colors.black,
-      activeColorPrimary: kPrimaryColor,
+      inactiveColorPrimary: Colors.white,
+      activeColorPrimary: Colors.white,
     ),
     PersistentBottomNavBarItem(
       icon: const Icon(Icons.history),
       title: 'History',
-      inactiveColorPrimary: Colors.black,
-      activeColorPrimary: kPrimaryColor,
+      inactiveColorPrimary: Colors.white,
+      activeColorPrimary: Colors.white,
     ),
     PersistentBottomNavBarItem(
       icon: const Icon(Icons.settings),
       title: 'Settings',
-      inactiveColorPrimary: Colors.black,
-      activeColorPrimary: kPrimaryColor,
+      inactiveColorPrimary: Colors.white,
+      activeColorPrimary: Colors.white,
     ),
   ];
 
@@ -67,6 +68,7 @@ class _NavBodyState extends State<NavBody> {
 
   void initializeDownloder() async {
     await FlutterDownloader.initialize(debug: true);
+    FlutterNativeSplash.remove();
   }
 
   @override
@@ -78,10 +80,14 @@ class _NavBodyState extends State<NavBody> {
       items: _navBarItems,
       confineInSafeArea: true,
       resizeToAvoidBottomInset: true,
+      backgroundColor: kPrimaryColor,
       hideNavigationBarWhenKeyboardShows: true,
-      decoration: NavBarDecoration(
-          borderRadius: BorderRadius.circular(10),
-          colorBehindNavBar: Colors.black),
+      decoration: const NavBarDecoration(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20),
+        ),
+        colorBehindNavBar: Colors.white,
+      ),
       popAllScreensOnTapOfSelectedTab: true,
       popActionScreens: PopActionScreensType.all,
       itemAnimationProperties: const ItemAnimationProperties(
@@ -93,7 +99,7 @@ class _NavBodyState extends State<NavBody> {
         curve: Curves.ease,
         duration: Duration(milliseconds: 200),
       ),
-      navBarStyle: NavBarStyle.style2,
+      navBarStyle: NavBarStyle.style9,
     );
   }
 }

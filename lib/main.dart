@@ -4,10 +4,12 @@ import 'package:instant_video_downloader/constants/controller.dart';
 import 'package:instant_video_downloader/controllers/navigation_controller.dart';
 import 'package:instant_video_downloader/router/router_generator.dart';
 import 'package:instant_video_downloader/services/shared_pref.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 void main() {
   Get.put(NavigationController());
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   SharedPref.init();
   runApp(const MyApp());
 }
@@ -21,9 +23,6 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Instant Video Downloader',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
       initialRoute: root,
       onGenerateRoute: RouteGenerator.onGeneratedRoutes,
       defaultTransition: Transition.zoom,

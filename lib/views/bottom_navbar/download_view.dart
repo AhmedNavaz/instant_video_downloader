@@ -37,6 +37,8 @@ class _DownloadViewState extends State<DownloadView> {
   bool isPasted = false;
   bool isGettingPost = false;
   bool noThanks = false;
+  int _progress = 0;
+  bool downloadStarted = false;
   final ReceivePort _port = ReceivePort();
 
   final Post _post = Post();
@@ -80,24 +82,6 @@ class _DownloadViewState extends State<DownloadView> {
     }
   }
 
-  Future<String?> login() async {
-    try {
-      http.Response response = await client.post(
-        Uri.parse('${LOCALHOST}login'),
-        body: {
-          "username": "itchaboey",
-          "password": "g6g)6/F8T&C&@N\$",
-        },
-      );
-      Map<String, dynamic> jsonResponse = await jsonDecode(response.body);
-      print(jsonResponse);
-    } catch (e) {
-      print("No user found!");
-      return e.toString();
-    }
-    return null;
-  }
-
   @override
   void initState() {
     IsolateNameServer.registerPortWithName(
@@ -106,7 +90,9 @@ class _DownloadViewState extends State<DownloadView> {
       String id = data[0];
       DownloadTaskStatus status = data[1];
       int progress = data[2];
-      setState(() {});
+      setState(() {
+        _progress = progress;
+      });
     });
 
     FlutterDownloader.registerCallback(downloadCallback);
@@ -158,6 +144,21 @@ class _DownloadViewState extends State<DownloadView> {
     return clipboardData?.text;
   }
 
+  // set duration seconds to 00:00
+  String setDuration(int duration) {
+    int minutes = duration ~/ 60;
+    int seconds = duration % 60;
+    String minute = minutes.toString();
+    String second = seconds.toString();
+    if (minutes < 10) {
+      minute = "0$minutes";
+    }
+    if (seconds < 10) {
+      second = "0$seconds";
+    }
+    return "$minute:$second";
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -182,7 +183,13 @@ class _DownloadViewState extends State<DownloadView> {
               Container(
                 padding: const EdgeInsets.all(10),
                 height: MediaQuery.of(context).size.height * 0.3,
-                color: kPrimaryColor,
+                decoration: const BoxDecoration(
+                  color: kPrimaryColor,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                ),
                 child: TabBarView(
                   children: [
                     Column(children: [
@@ -192,15 +199,15 @@ class _DownloadViewState extends State<DownloadView> {
                           children: [
                             TextFormField(
                               controller: postUrlController,
-                              cursorColor: Colors.white,
+                              cursorColor: Colors.black,
                               style: const TextStyle(
-                                  color: Colors.white, fontSize: 20),
+                                  color: Colors.black, fontSize: 20),
                               decoration: const InputDecoration(
-                                fillColor: kSecondaryColor,
+                                fillColor: kBackgroundColor,
                                 filled: true,
                                 contentPadding: EdgeInsets.all(18),
                                 hintText: 'Enter URL',
-                                hintStyle: TextStyle(color: Colors.white),
+                                hintStyle: TextStyle(color: Colors.black),
                                 border: InputBorder.none,
                               ),
                             ),
@@ -213,6 +220,8 @@ class _DownloadViewState extends State<DownloadView> {
                                     setState(() {
                                       isPasted = true;
                                       isGettingPost = true;
+                                      downloadStarted = false;
+                                      _progress = 0;
                                     });
 
                                     _getClipboardText().then((value) {
@@ -230,13 +239,20 @@ class _DownloadViewState extends State<DownloadView> {
                                         fontSize: 20,
                                       )),
                                   style: ElevatedButton.styleFrom(
-                                      minimumSize: const Size(70, 50),
-                                      primary: kBackgroundColor),
+                                    minimumSize: const Size(70, 50),
+                                    primary: kBackgroundColor,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
                                 ),
                                 ElevatedButton(
                                   onPressed: () {
                                     if (_formKey.currentState!.validate()) {
                                       download(_post.url);
+                                      setState(() {
+                                        downloadStarted = true;
+                                      });
                                       sharedPref
                                           .addPostListToSharedPrefs(_post);
                                     }
@@ -247,8 +263,12 @@ class _DownloadViewState extends State<DownloadView> {
                                         fontSize: 20,
                                       )),
                                   style: ElevatedButton.styleFrom(
-                                      minimumSize: const Size(70, 50),
-                                      primary: kAccentColor),
+                                    minimumSize: const Size(70, 50),
+                                    primary: kAccentColor,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -264,20 +284,15 @@ class _DownloadViewState extends State<DownloadView> {
                             Expanded(
                               child: TextFormField(
                                 controller: userNameController,
-                                onChanged: (value) {
-                                  setState(() {
-                                    isSearching = true;
-                                  });
-                                },
-                                cursorColor: Colors.white,
+                                cursorColor: Colors.black,
                                 style: const TextStyle(
-                                    color: Colors.white, fontSize: 20),
+                                    color: Colors.black, fontSize: 20),
                                 decoration: const InputDecoration(
-                                  fillColor: kSecondaryColor,
+                                  fillColor: kBackgroundColor,
                                   filled: true,
                                   contentPadding: EdgeInsets.all(18),
                                   hintText: 'Enter Username',
-                                  hintStyle: TextStyle(color: Colors.white),
+                                  hintStyle: TextStyle(color: Colors.black),
                                   border: InputBorder.none,
                                 ),
                               ),
@@ -285,6 +300,9 @@ class _DownloadViewState extends State<DownloadView> {
                             ElevatedButton(
                               onPressed: () async {
                                 if (_formKey.currentState!.validate()) {
+                                  setState(() {
+                                    isSearching = true;
+                                  });
                                   await getDP(userNameController.text).then(
                                     (value) {
                                       setState(() {
@@ -353,20 +371,15 @@ class _DownloadViewState extends State<DownloadView> {
                             Expanded(
                               child: TextFormField(
                                 controller: userNameController2,
-                                onChanged: (value) {
-                                  setState(() {
-                                    isSearching = true;
-                                  });
-                                },
-                                cursorColor: Colors.white,
+                                cursorColor: Colors.black,
                                 style: const TextStyle(
-                                    color: Colors.white, fontSize: 20),
+                                    color: Colors.black, fontSize: 20),
                                 decoration: const InputDecoration(
-                                  fillColor: kSecondaryColor,
+                                  fillColor: kBackgroundColor,
                                   filled: true,
                                   contentPadding: EdgeInsets.all(18),
                                   hintText: 'Enter Username',
-                                  hintStyle: TextStyle(color: Colors.white),
+                                  hintStyle: TextStyle(color: Colors.black),
                                   border: InputBorder.none,
                                 ),
                               ),
@@ -374,6 +387,9 @@ class _DownloadViewState extends State<DownloadView> {
                             ElevatedButton(
                               onPressed: () async {
                                 if (_formKey.currentState!.validate()) {
+                                  setState(() {
+                                    isSearching = true;
+                                  });
                                   await getDP(userNameController2.text).then(
                                     (value) {
                                       setState(() {
@@ -440,13 +456,16 @@ class _DownloadViewState extends State<DownloadView> {
               isPasted
                   ? Card(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       elevation: 5,
                       margin: const EdgeInsets.symmetric(
                           horizontal: 5, vertical: 10),
                       child: isGettingPost
-                          ? const Center(child: CircularProgressIndicator())
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                              color: kGradientColor,
+                            ))
                           : Row(
                               children: [
                                 Stack(
@@ -456,8 +475,8 @@ class _DownloadViewState extends State<DownloadView> {
                                       height: 120,
                                       decoration: BoxDecoration(
                                         borderRadius: const BorderRadius.only(
-                                          topLeft: Radius.circular(10),
-                                          bottomLeft: Radius.circular(10),
+                                          topLeft: Radius.circular(20),
+                                          bottomLeft: Radius.circular(20),
                                         ),
                                         image: DecorationImage(
                                             image: NetworkImage(
@@ -469,24 +488,45 @@ class _DownloadViewState extends State<DownloadView> {
                                       child: Align(
                                         alignment: Alignment.bottomLeft,
                                         child: Container(
-                                            color:
-                                                Colors.black.withOpacity(0.5),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Colors.black.withOpacity(0.5),
+                                              borderRadius:
+                                                  const BorderRadius.only(
+                                                bottomLeft: Radius.circular(20),
+                                              ),
+                                            ),
                                             child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 10),
+                                              padding: const EdgeInsets.only(
+                                                  left: 15,
+                                                  bottom: 3,
+                                                  right: 10),
                                               child: Text(
                                                   _post.duration == null
                                                       ? ''
-                                                      : _post.duration
-                                                          .toString()
-                                                          .split('.')[0],
+                                                      : setDuration(_post
+                                                          .duration!
+                                                          .toInt()),
                                                   style: const TextStyle(
                                                       color: Colors.white,
                                                       fontSize: 16)),
                                             )),
                                       ),
                                     ),
+                                    downloadStarted
+                                        ? Positioned.fill(
+                                            child: Align(
+                                              alignment: Alignment.center,
+                                              child: Text(
+                                                  _progress.toString() + '%',
+                                                  style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 22,
+                                                      fontWeight:
+                                                          FontWeight.bold)),
+                                            ),
+                                          )
+                                        : Container(),
                                   ],
                                 ),
                                 Expanded(
@@ -579,13 +619,21 @@ class _DownloadViewState extends State<DownloadView> {
                                     });
                                   },
                                   style: ElevatedButton.styleFrom(
-                                      primary: Colors.grey),
+                                    primary: Colors.grey,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
                                 ),
                                 ElevatedButton(
                                   child: const Text('Rate us'),
                                   onPressed: () {},
                                   style: ElevatedButton.styleFrom(
-                                      primary: kAccentColor),
+                                    primary: kSecondaryColor,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -593,11 +641,6 @@ class _DownloadViewState extends State<DownloadView> {
                         ),
                       ),
                     ),
-              ElevatedButton(
-                  onPressed: () {
-                    login();
-                  },
-                  child: const Text("Login")),
             ],
           ),
         ),
