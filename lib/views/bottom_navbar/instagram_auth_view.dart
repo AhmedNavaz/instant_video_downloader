@@ -23,13 +23,13 @@ class _InstagramAuthViewState extends State<InstagramAuthView> {
 
   AuthController authController = Get.put(AuthController());
 
-  Future<String?> login() async {
+  Future<String?> login(String username, String password) async {
     try {
       http.Response response = await client.post(
         Uri.parse('${LOCALHOST}login'),
         body: {
-          "username": "itchaboey",
-          "password": "g6g)6/F8T&C&@N\$",
+          "username": username,
+          "password": password,
         },
       );
       Map<String, dynamic> jsonResponse = await jsonDecode(response.body);
@@ -39,6 +39,25 @@ class _InstagramAuthViewState extends State<InstagramAuthView> {
       return e.toString();
     }
     return null;
+  }
+
+  Future<void> getProfileDetails(String? username) async {
+    try {
+      http.Response response = await client.post(
+        Uri.parse('${LOCALHOST}user'),
+        body: {"username": username},
+      );
+      Map<String, dynamic> jsonResponse = await jsonDecode(response.body);
+      jsonResponse = jsonResponse['response'];
+      setState(() {
+        authController.user.value.profilePic = jsonResponse['profilePic'];
+        authController.user.value.fullName = jsonResponse['name'];
+        authController.user.value.followers = jsonResponse['followers'];
+        authController.user.value.following = jsonResponse['following'];
+      });
+    } catch (e) {
+      print("No user found!");
+    }
   }
 
   @override
@@ -142,8 +161,14 @@ class _InstagramAuthViewState extends State<InstagramAuthView> {
                         ElevatedButton(
                           onPressed: () {
                             setState(() {
-                              login();
-                              // authController.isLoggedIn.value = true;
+                              login(_usernameController.text,
+                                      _passwordController.text)
+                                  .then((value) {
+                                setState(() {
+                                  authController.isLoggedIn.value = true;
+                                });
+                                getProfileDetails(_usernameController.text);
+                              });
                             });
                           },
                           child: Ink(

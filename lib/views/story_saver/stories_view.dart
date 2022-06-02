@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:instant_video_downloader/constants/colors.dart';
 import 'package:instant_video_downloader/controllers/search_controller.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:story_view/story_view.dart';
 
 class StoriesView extends StatefulWidget {
   StoriesView({Key? key, this.title}) : super(key: key);
@@ -19,6 +20,7 @@ class StoriesView extends StatefulWidget {
 class _StoriesViewState extends State<StoriesView> {
   SearchController searchController = Get.find<SearchController>();
   final ReceivePort _port = ReceivePort();
+  final StoryController storyController = StoryController();
 
   @override
   void initState() {
@@ -38,6 +40,7 @@ class _StoriesViewState extends State<StoriesView> {
   @override
   void dispose() {
     IsolateNameServer.removePortNameMapping('downloader_send_port');
+    storyController.dispose();
     super.dispose();
   }
 
@@ -75,6 +78,8 @@ class _StoriesViewState extends State<StoriesView> {
     return fileName;
   }
 
+  int index = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,30 +87,39 @@ class _StoriesViewState extends State<StoriesView> {
         title: Text('@${widget.title!}'),
         backgroundColor: kPrimaryColor,
       ),
-      body: ListView.builder(
-        itemCount: searchController.storiesLinks.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Column(
-              children: [
-                Image.network(
-                  searchController.storiesLinks[index]['thumbnail'],
-                  width: 400,
-                  height: 500,
-                ),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.03,
-                ),
-                ElevatedButton(
-                    onPressed: () {
-                      download(searchController.storiesLinks[index]['url']);
-                    },
-                    child: const Text("Download"))
-              ],
+      body: Stack(
+        children: [
+          StoryView(
+            storyItems: searchController.storiesLinks.map((url) {
+              return StoryItem.pageVideo(
+                url['url'],
+                controller: storyController,
+              );
+            }).toList(),
+            controller: storyController,
+            progressPosition: ProgressPosition.top,
+            repeat: false,
+            onComplete: () {
+              setState(() {
+                index++;
+              });
+            },
+          ),
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: IconButton(
+              onPressed: () {
+                download(searchController.storiesLinks[index]['url']);
+              },
+              icon: const Icon(
+                Icons.download,
+                color: Colors.white,
+                size: 50,
+              ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }

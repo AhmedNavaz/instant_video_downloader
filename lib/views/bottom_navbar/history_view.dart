@@ -18,7 +18,7 @@ class _HistoryViewState extends State<HistoryView> {
   void initState() {
     sharedPref.getPostListFromSharedPrefs().then((value) {
       setState(() {
-        sharedPref.postList = value!;
+        sharedPref.postList = value!.reversed.toList();
       });
     });
     super.initState();
@@ -42,8 +42,10 @@ class _HistoryViewState extends State<HistoryView> {
               itemCount: sharedPref.postList.length,
               itemBuilder: (context, index) {
                 return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: index == sharedPref.postList.length - 1
+                      ? const EdgeInsets.only(
+                          top: 5, bottom: 20, right: 10, left: 10)
+                      : const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   child: Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),

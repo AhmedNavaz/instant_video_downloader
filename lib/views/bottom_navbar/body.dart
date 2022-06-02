@@ -22,7 +22,7 @@ class _NavBodyState extends State<NavBody> {
     const DownloadView(),
     StorySaverView(),
     HistoryView(),
-    const SettingsView()
+    SettingsView()
   ];
   final List<PersistentBottomNavBarItem> _navBarItems = [
     PersistentBottomNavBarItem(

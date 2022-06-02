@@ -57,9 +57,70 @@ class _StorySaverViewState extends State<StorySaverView> {
         backgroundColor: kPrimaryColor,
         centerTitle: true,
       ),
-      body: searchController.storiesProfiles.isEmpty && !isLoading
-          ? Column(
+      body: searchController.storiesProfiles.isEmpty && isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: kPrimaryColor),
+            )
+          : Column(
               children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(children: [
+                    for (int index = 0;
+                        index < searchController.storiesProfiles.length;
+                        index++)
+                      InkWell(
+                        onTap: () async {
+                          setState(() {
+                            isLoading = true;
+                          });
+                          await generateStoriesLink(searchController
+                                  .storiesProfiles[index]["profileId"]
+                                  .toString())
+                              .then((value) {
+                            searchController.storiesLinks = value;
+                          });
+                          Get.to(() => StoriesView(
+                                title: searchController.storiesProfiles[index]
+                                    ["username"],
+                              ));
+                          setState(() {
+                            isLoading = false;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 20),
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 15),
+                                child: CircleAvatar(
+                                  radius: 43,
+                                  backgroundColor: Colors.red,
+                                  child: CircleAvatar(
+                                    radius: 40,
+                                    backgroundImage: NetworkImage(
+                                        searchController.storiesProfiles[index]
+                                            ["profilePic"]),
+                                    backgroundColor: Colors.transparent,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                searchController.storiesProfiles[index]
+                                    ["username"]!,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ]),
+                ),
                 noThanks
                     ? Container()
                     : Card(
@@ -116,7 +177,6 @@ class _StorySaverViewState extends State<StorySaverView> {
                           ),
                         ),
                       ),
-                SizedBox(height: MediaQuery.of(context).size.height * 0.1),
                 ElevatedButton(
                   onPressed: () async {
                     setState(() {
@@ -137,77 +197,7 @@ class _StorySaverViewState extends State<StorySaverView> {
                   ),
                 ),
               ],
-            )
-          : isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(),
-                )
-              : Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: GridView.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 200,
-                              childAspectRatio: 0.9,
-                              crossAxisSpacing: 20,
-                              mainAxisSpacing: 20),
-                      itemCount: searchController.storiesProfiles.length,
-                      itemBuilder: (BuildContext ctx, index) {
-                        return InkWell(
-                          onTap: () async {
-                            setState(() {
-                              isLoading = true;
-                            });
-                            await generateStoriesLink(searchController
-                                    .storiesProfiles[index]["profileId"]
-                                    .toString())
-                                .then((value) {
-                              searchController.storiesLinks = value;
-                            });
-                            Get.to(() => StoriesView(
-                                  title: searchController.storiesProfiles[index]
-                                      ["username"],
-                                ));
-                            setState(() {
-                              isLoading = false;
-                            });
-                          },
-                          child: Card(
-                            elevation: 10,
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 10),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 15),
-                                    child: CircleAvatar(
-                                      radius: 30,
-                                      backgroundImage: NetworkImage(
-                                          searchController
-                                                  .storiesProfiles[index]
-                                              ["profilePic"]),
-                                      backgroundColor: Colors.transparent,
-                                    ),
-                                  ),
-                                  Text(
-                                    searchController.storiesProfiles[index]
-                                        ["username"]!,
-                                    style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20)),
-                          ),
-                        );
-                      }),
-                ),
+            ),
     );
   }
 }

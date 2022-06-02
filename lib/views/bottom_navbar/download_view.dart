@@ -93,6 +93,11 @@ class _DownloadViewState extends State<DownloadView> {
       setState(() {
         _progress = progress;
       });
+      if (status == DownloadTaskStatus.complete) {
+        setState(() {
+          _progress = 100;
+        });
+      }
     });
 
     FlutterDownloader.registerCallback(downloadCallback);
