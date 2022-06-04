@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:get/get.dart';
 import 'package:instant_video_downloader/constants/colors.dart';
+import 'package:instant_video_downloader/controllers/authController.dart';
+import 'package:instant_video_downloader/services/shared_pref.dart';
 import 'package:instant_video_downloader/views/bottom_navbar/instagram_auth_view.dart';
 import 'package:instant_video_downloader/views/bottom_navbar/download_view.dart';
 import 'package:instant_video_downloader/views/bottom_navbar/history_view.dart';
@@ -60,8 +63,18 @@ class _NavBodyState extends State<NavBody> {
   final PersistentTabController _controller =
       PersistentTabController(initialIndex: 0);
 
+  SharedPref sharedPref = SharedPref();
+  AuthController authController = Get.put(AuthController());
+
   @override
   initState() {
+    sharedPref.getDownloadLocation().then((value) {
+      if (value != null) {
+        setState(() {
+          authController.downloadLocation.value = value;
+        });
+      }
+    });
     super.initState();
     initializeDownloder();
   }

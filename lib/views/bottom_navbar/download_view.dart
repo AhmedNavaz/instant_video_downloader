@@ -10,6 +10,7 @@ import 'package:instant_video_downloader/constants/colors.dart';
 import 'package:http/http.dart' as http;
 import 'package:instant_video_downloader/constants/controller.dart';
 import 'package:instant_video_downloader/constants/uri.dart';
+import 'package:instant_video_downloader/controllers/authController.dart';
 import 'package:instant_video_downloader/controllers/search_controller.dart';
 import 'package:instant_video_downloader/models/post.dart';
 import 'package:instant_video_downloader/router/router_generator.dart';
@@ -29,9 +30,10 @@ class _DownloadViewState extends State<DownloadView> {
   TextEditingController userNameController2 = TextEditingController();
   TextEditingController postUrlController = TextEditingController();
   SearchController searchController = Get.put(SearchController());
+  AuthController authController = Get.find<AuthController>();
 
   final _formKey = GlobalKey<FormState>();
-  SharedPref sharedPref = Get.put(SharedPref());
+  SharedPref sharedPref = SharedPref();
 
   bool isSearching = false;
   bool isPasted = false;
@@ -68,7 +70,10 @@ class _DownloadViewState extends State<DownloadView> {
         body: {"url": url},
       );
       Map<String, dynamic> jsonResponse = await jsonDecode(response.body);
+      print(jsonResponse);
       setState(() {
+        _post.id = UniqueKey().toString();
+        _post.link = postUrlController.text;
         _post.thumbnail = jsonResponse["node"]["display_url"];
         _post.title = jsonResponse["node"]["edge_media_to_caption"]["edges"][0]
             ["node"]["text"];
@@ -84,6 +89,22 @@ class _DownloadViewState extends State<DownloadView> {
 
   @override
   void initState() {
+    _getClipboardText().then((value) {
+      if (value!.contains("instagram.com/p/")) {
+        setState(() {
+          isPasted = true;
+          isGettingPost = true;
+          downloadStarted = false;
+          _progress = 0;
+          postUrlController.text = value;
+        });
+        generateDownloadLink(value).then((value) {
+          setState(() {
+            isGettingPost = false;
+          });
+        });
+      }
+    });
     IsolateNameServer.registerPortWithName(
         _port.sendPort, 'downloader_send_port');
     _port.listen((dynamic data) {
@@ -122,7 +143,7 @@ class _DownloadViewState extends State<DownloadView> {
     if (status.isGranted) {
       await FlutterDownloader.enqueue(
               url: url!,
-              savedDir: '/storage/emulated/0/Download',
+              savedDir: authController.downloadLocation.toString(),
               showNotification: true,
               openFileFromNotification: true,
               fileName: setFileName(url))
@@ -130,7 +151,7 @@ class _DownloadViewState extends State<DownloadView> {
         setState(() {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("Downloading..."),
-            padding: EdgeInsets.only(left: 10, bottom: 20, top: 10),
+            padding: EdgeInsets.only(left: 10, bottom: 30, top: 10),
           ));
         });
       });
@@ -222,21 +243,45 @@ class _DownloadViewState extends State<DownloadView> {
                               children: [
                                 ElevatedButton(
                                   onPressed: () {
-                                    setState(() {
-                                      isPasted = true;
-                                      isGettingPost = true;
-                                      downloadStarted = false;
-                                      _progress = 0;
-                                    });
-
-                                    _getClipboardText().then((value) {
-                                      postUrlController.text = value!;
-                                      generateDownloadLink(value).then((value) {
-                                        setState(() {
-                                          isGettingPost = false;
-                                        });
+                                    if (authController.isLoggedIn.value) {
+                                      setState(() {
+                                        isPasted = true;
+                                        isGettingPost = true;
+                                        downloadStarted = false;
+                                        _progress = 0;
                                       });
-                                    });
+                                      _getClipboardText().then((value) {
+                                        if (value!
+                                            .contains("instagram.com/p/")) {
+                                          postUrlController.text = value;
+                                          generateDownloadLink(value)
+                                              .then((value) {
+                                            setState(() {
+                                              isGettingPost = false;
+                                            });
+                                          });
+                                        } else {
+                                          setState(() {
+                                            isPasted = false;
+                                            isGettingPost = false;
+                                          });
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(
+                                            content: Text("Invalid Link"),
+                                            padding: EdgeInsets.only(
+                                                left: 10, bottom: 30, top: 10),
+                                          ));
+                                        }
+                                      });
+                                    } else {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                        content:
+                                            Text("Please login to download"),
+                                        padding: EdgeInsets.only(
+                                            left: 10, bottom: 30, top: 10),
+                                      ));
+                                    }
                                   },
                                   child: const Text("Paste Link",
                                       style: TextStyle(

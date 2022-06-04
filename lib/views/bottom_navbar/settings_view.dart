@@ -1,13 +1,15 @@
 import 'dart:convert';
-
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:instant_video_downloader/constants/colors.dart';
 import 'package:instant_video_downloader/constants/uri.dart';
 import 'package:instant_video_downloader/controllers/authController.dart';
 import 'package:instant_video_downloader/models/user.dart';
+import 'package:instant_video_downloader/services/shared_pref.dart';
 import 'package:numeral/numeral.dart';
 import 'package:http/http.dart' as http;
+import 'package:permission_handler/permission_handler.dart';
 
 class SettingsView extends StatefulWidget {
   SettingsView({Key? key}) : super(key: key);
@@ -19,7 +21,25 @@ class SettingsView extends StatefulWidget {
 class _SettingsViewState extends State<SettingsView> {
   http.Client get client => http.Client();
 
-  AuthController authController = Get.put(AuthController());
+  AuthController authController = Get.find<AuthController>();
+  SharedPref sharedPref = SharedPref();
+
+  Future<String?> setDownloadLocation() async {
+    // get permission
+    final status = await Permission.storage.request();
+    if (status.isGranted) {
+      String? path = await FilePicker.platform.getDirectoryPath();
+      if (path != null) {
+        await sharedPref.setDownloadLocation(path);
+        return path;
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,17 +102,25 @@ class _SettingsViewState extends State<SettingsView> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 5),
               child: InkWell(
-                onTap: () {},
-                child: const Card(
+                onTap: () {
+                  setDownloadLocation().then(
+                    (value) {
+                      setState(() {
+                        authController.downloadLocation.value = value!;
+                      });
+                    },
+                  );
+                },
+                child: Card(
                     child: ListTile(
-                  leading: Icon(
+                  leading: const Icon(
                     Icons.folder,
                     color: kAccentColor,
                   ),
-                  title: Text('Download Location',
+                  title: const Text('Download Location',
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  subtitle: Text('/storage/emulated/0/Download'),
+                  subtitle: Text(authController.downloadLocation.toString()),
                 )),
               ),
             ),

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:instant_video_downloader/constants/colors.dart';
+import 'package:instant_video_downloader/controllers/authController.dart';
 import 'package:instant_video_downloader/controllers/search_controller.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -18,6 +19,7 @@ class _DownloadPageState extends State<DownloadPage> {
   SearchController searchController = Get.find<SearchController>();
   bool isDownloading = false;
   final ReceivePort _port = ReceivePort();
+  AuthController authController = Get.find<AuthController>();
 
   @override
   void initState() {
@@ -52,7 +54,7 @@ class _DownloadPageState extends State<DownloadPage> {
     if (status.isGranted) {
       await FlutterDownloader.enqueue(
               url: searchController.profileImage.toString(),
-              savedDir: '/storage/emulated/0/Download',
+              savedDir: authController.downloadLocation.toString(),
               showNotification: true,
               openFileFromNotification: true,
               fileName: setFileName())

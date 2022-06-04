@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:get/get.dart';
 import 'package:instant_video_downloader/constants/colors.dart';
+import 'package:instant_video_downloader/controllers/authController.dart';
 import 'package:instant_video_downloader/controllers/search_controller.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:story_view/story_view.dart';
@@ -21,6 +22,7 @@ class _StoriesViewState extends State<StoriesView> {
   SearchController searchController = Get.find<SearchController>();
   final ReceivePort _port = ReceivePort();
   final StoryController storyController = StoryController();
+  AuthController authController = Get.find<AuthController>();
 
   @override
   void initState() {
@@ -56,7 +58,7 @@ class _StoriesViewState extends State<StoriesView> {
     if (status.isGranted) {
       await FlutterDownloader.enqueue(
               url: url!,
-              savedDir: '/storage/emulated/0/Download',
+              savedDir: authController.downloadLocation.toString(),
               showNotification: true,
               openFileFromNotification: true,
               fileName: setFileName(url))
@@ -99,11 +101,6 @@ class _StoriesViewState extends State<StoriesView> {
             controller: storyController,
             progressPosition: ProgressPosition.top,
             repeat: false,
-            onComplete: () {
-              setState(() {
-                index++;
-              });
-            },
           ),
           Positioned(
             bottom: 20,

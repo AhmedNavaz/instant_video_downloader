@@ -16,7 +16,7 @@ class StorySaverView extends StatefulWidget {
 
 class _StorySaverViewState extends State<StorySaverView> {
   http.Client get client => http.Client();
-  SearchController searchController = Get.put(SearchController());
+  SearchController searchController = Get.find<SearchController>();
   bool isLoading = false;
   bool noThanks = false;
 
@@ -57,69 +57,91 @@ class _StorySaverViewState extends State<StorySaverView> {
         backgroundColor: kPrimaryColor,
         centerTitle: true,
       ),
-      body: searchController.storiesProfiles.isEmpty && isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: kPrimaryColor),
-            )
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: kPrimaryColor))
           : Column(
               children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(children: [
-                    for (int index = 0;
-                        index < searchController.storiesProfiles.length;
-                        index++)
-                      InkWell(
-                        onTap: () async {
-                          setState(() {
-                            isLoading = true;
-                          });
-                          await generateStoriesLink(searchController
-                                  .storiesProfiles[index]["profileId"]
-                                  .toString())
-                              .then((value) {
-                            searchController.storiesLinks = value;
-                          });
-                          Get.to(() => StoriesView(
-                                title: searchController.storiesProfiles[index]
-                                    ["username"],
-                              ));
-                          setState(() {
-                            isLoading = false;
-                          });
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 20),
-                          child: Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 15),
-                                child: CircleAvatar(
-                                  radius: 43,
-                                  backgroundColor: Colors.red,
-                                  child: CircleAvatar(
-                                    radius: 40,
-                                    backgroundImage: NetworkImage(
-                                        searchController.storiesProfiles[index]
-                                            ["profilePic"]),
-                                    backgroundColor: Colors.transparent,
+                Obx(
+                  () => searchController.storiesProfiles.isEmpty &&
+                          !searchController.storyLoading.value
+                      ? Container(
+                          margin: const EdgeInsets.only(top: 20),
+                          child: const Text("Login to see your stories",
+                              style: TextStyle(
+                                  fontSize: 20,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold)))
+                      : searchController.storyLoading.value
+                          ? Container(
+                              margin: const EdgeInsets.only(top: 20),
+                              child: const CircularProgressIndicator(
+                                  color: kPrimaryColor),
+                            )
+                          : SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(children: [
+                                for (int index = 0;
+                                    index <
+                                        searchController.storiesProfiles.length;
+                                    index++)
+                                  InkWell(
+                                    onTap: () async {
+                                      setState(() {
+                                        isLoading = true;
+                                      });
+                                      await generateStoriesLink(searchController
+                                              .storiesProfiles[index]
+                                                  ["profileId"]
+                                              .toString())
+                                          .then((value) {
+                                        searchController.storiesLinks = value;
+                                      });
+                                      Get.to(() => StoriesView(
+                                            title: searchController
+                                                    .storiesProfiles[index]
+                                                ["username"],
+                                          ));
+                                      setState(() {
+                                        isLoading = false;
+                                      });
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 20),
+                                      child: Column(
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                bottom: 15),
+                                            child: CircleAvatar(
+                                              radius: 43,
+                                              backgroundColor: Colors.red,
+                                              child: CircleAvatar(
+                                                radius: 40,
+                                                backgroundImage: NetworkImage(
+                                                    searchController
+                                                            .storiesProfiles[
+                                                        index]["profilePic"]),
+                                                backgroundColor:
+                                                    Colors.transparent,
+                                              ),
+                                            ),
+                                          ),
+                                          Text(
+                                            searchController
+                                                    .storiesProfiles[index]
+                                                ["username"]!,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                              Text(
-                                searchController.storiesProfiles[index]
-                                    ["username"]!,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ]),
+                              ]),
+                            ),
                 ),
                 noThanks
                     ? Container()
@@ -177,25 +199,25 @@ class _StorySaverViewState extends State<StorySaverView> {
                           ),
                         ),
                       ),
-                ElevatedButton(
-                  onPressed: () async {
-                    setState(() {
-                      isLoading = true;
-                    });
+                // ElevatedButton(
+                //   onPressed: () async {
+                //     setState(() {
+                //       isLoading = true;
+                //     });
 
-                    await getProfiles().then((value) {
-                      setState(() {
-                        searchController.storiesProfiles = value;
-                        isLoading = false;
-                      });
-                    });
-                  },
-                  child: const Text("Get Stories"),
-                  style: ElevatedButton.styleFrom(
-                    primary: kPrimaryColor,
-                    fixedSize: const Size(200, 50),
-                  ),
-                ),
+                //     await getProfiles().then((value) {
+                //       setState(() {
+                //         searchController.storiesProfiles = value;
+                //         isLoading = false;
+                //       });
+                //     });
+                //   },
+                //   child: const Text("Get Stories"),
+                //   style: ElevatedButton.styleFrom(
+                //     primary: kPrimaryColor,
+                //     fixedSize: const Size(200, 50),
+                //   ),
+                // ),
               ],
             ),
     );

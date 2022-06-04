@@ -6,6 +6,8 @@ class SearchController extends GetxController {
 
   var profileImage2 = ''.obs;
   var userName2 = ''.obs;
+
+  var storyLoading = false.obs;
   List<Map<String, dynamic>> storiesProfiles = [];
   List<Map<String, dynamic>> storiesLinks = [];
 }

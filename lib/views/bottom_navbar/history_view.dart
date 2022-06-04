@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:instant_video_downloader/constants/colors.dart';
 import 'package:instant_video_downloader/services/shared_pref.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HistoryView extends StatefulWidget {
   HistoryView({Key? key}) : super(key: key);
@@ -152,7 +153,12 @@ class _HistoryViewState extends State<HistoryView> {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.open_in_browser),
-                              onPressed: () {},
+                              onPressed: () async {
+                                await launch(
+                                  sharedPref.postList[index].link!,
+                                  universalLinksOnly: true,
+                                );
+                              },
                             ),
                             IconButton(
                               icon: const Icon(Icons.copy),

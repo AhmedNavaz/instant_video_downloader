@@ -6,6 +6,7 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:get/get.dart';
 import 'package:instant_video_downloader/constants/colors.dart';
 import 'package:instant_video_downloader/constants/uri.dart';
+import 'package:instant_video_downloader/controllers/authController.dart';
 import 'package:instant_video_downloader/controllers/search_controller.dart';
 import 'package:instant_video_downloader/models/profile.dart';
 import 'package:http/http.dart' as http;
@@ -27,6 +28,7 @@ class _ProfileViewState extends State<ProfileView> {
   SearchController searchController = Get.find<SearchController>();
   bool isLoading = false;
   final ReceivePort _port = ReceivePort();
+  AuthController authController = Get.find<AuthController>();
 
   @override
   void initState() {
@@ -89,7 +91,7 @@ class _ProfileViewState extends State<ProfileView> {
     if (status.isGranted) {
       await FlutterDownloader.enqueue(
               url: url!,
-              savedDir: '/storage/emulated/0/Download',
+              savedDir: authController.downloadLocation.toString(),
               showNotification: true,
               openFileFromNotification: true,
               fileName: setFileName(url))

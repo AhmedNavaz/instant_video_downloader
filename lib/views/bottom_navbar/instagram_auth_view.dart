@@ -6,6 +6,8 @@ import 'package:instant_video_downloader/constants/colors.dart';
 import 'package:instant_video_downloader/constants/uri.dart';
 import 'package:instant_video_downloader/controllers/authController.dart';
 import 'package:http/http.dart' as http;
+import 'package:instant_video_downloader/controllers/search_controller.dart';
+import 'package:instant_video_downloader/services/shared_pref.dart';
 
 class InstagramAuthView extends StatefulWidget {
   InstagramAuthView({Key? key}) : super(key: key);
@@ -21,7 +23,11 @@ class _InstagramAuthViewState extends State<InstagramAuthView> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  AuthController authController = Get.put(AuthController());
+  bool isLoading = false;
+
+  AuthController authController = Get.find<AuthController>();
+  SearchController searchController = Get.put(SearchController());
+  SharedPref sharedPref = SharedPref();
 
   Future<String?> login(String username, String password) async {
     try {
@@ -37,6 +43,23 @@ class _InstagramAuthViewState extends State<InstagramAuthView> {
     } catch (e) {
       print("No user found!");
       return e.toString();
+    }
+    return null;
+  }
+
+  Future<int?> checkLogin(String username) async {
+    try {
+      http.Response response = await client.post(
+        Uri.parse('${LOCALHOST}session'),
+        body: {
+          "username": username,
+        },
+      );
+      Map<String, dynamic> jsonResponse = await jsonDecode(response.body);
+      print(jsonResponse);
+      return jsonResponse['response'];
+    } catch (e) {
+      print("No user found!");
     }
     return null;
   }
@@ -60,18 +83,71 @@ class _InstagramAuthViewState extends State<InstagramAuthView> {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getProfiles() async {
+    try {
+      http.Response response =
+          await client.get(Uri.parse('${LOCALHOST}storiesProfiles'));
+      final jsonResponse = json.decode(response.body);
+      final profiles = jsonResponse['response'] as List<dynamic>;
+      return profiles.cast<Map<String, dynamic>>();
+    } catch (e) {
+      print("No user found!");
+      return [];
+    }
+  }
+
+  void initializeStories() async {
+    setState(() {
+      searchController.storyLoading.value = true;
+    });
+
+    await getProfiles().then((value) {
+      setState(() {
+        searchController.storiesProfiles = value;
+        searchController.storyLoading.value = false;
+      });
+    });
+  }
+
+  void initializeLogin() async {
+    String? username = await sharedPref.getUsername();
+    if (username == null || username == "") {
+      setState(() {
+        authController.isLoggedIn.value = false;
+      });
+    } else {
+      checkLogin(username).then((value) {
+        if (value == 1) {
+          setState(() {
+            authController.isLoggedIn.value = true;
+            initializeStories();
+          });
+        } else {
+          authController.isLoggedIn.value = false;
+        }
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    initializeLogin();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text(" "),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-        ),
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: authController.isLoggedIn.value
+      appBar: AppBar(
+        title: const Text(" "),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Obx(
+            () => authController.isLoggedIn.value
                 ? Center(
                     child: Column(
                       children: [
@@ -88,6 +164,20 @@ class _InstagramAuthViewState extends State<InstagramAuthView> {
                         const Text("You are Logged In!",
                             style: TextStyle(
                                 fontSize: 20, fontWeight: FontWeight.bold)),
+                        TextButton(
+                            onPressed: () {
+                              setState(() {
+                                authController.isLoggedIn.value = false;
+                                sharedPref.saveUsername('');
+                              });
+                            },
+                            child: const Text(
+                              "Login from different account",
+                              style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: kAccentColor),
+                            )),
                       ],
                     ),
                   )
@@ -158,48 +248,60 @@ class _InstagramAuthViewState extends State<InstagramAuthView> {
                         ),
                         SizedBox(
                             height: MediaQuery.of(context).size.height * 0.02),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              login(_usernameController.text,
-                                      _passwordController.text)
-                                  .then((value) {
-                                setState(() {
-                                  authController.isLoggedIn.value = true;
-                                });
-                                getProfileDetails(_usernameController.text);
-                              });
-                            });
-                          },
-                          child: Ink(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(4),
-                              gradient: const LinearGradient(
-                                colors: [
-                                  kPrimaryColor,
-                                  kSecondaryColor,
-                                  kAccentColor,
-                                  kGradientColor,
-                                ],
-                              ),
-                            ),
-                            child: Container(
-                              constraints: const BoxConstraints(
-                                  minWidth: 400, minHeight: 60),
-                              child: const Center(
-                                  child: Text("Log In",
-                                      style: TextStyle(fontSize: 20))),
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            primary: Colors.white,
-                          ),
-                        )
+                        isLoading
+                            ? const CircularProgressIndicator(
+                                color: kAccentColor,
+                              )
+                            : ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    isLoading = true;
+                                    login(_usernameController.text,
+                                            _passwordController.text)
+                                        .then((value) {
+                                      setState(() {
+                                        isLoading = false;
+                                        authController.isLoggedIn.value = true;
+                                        initializeStories();
+                                        sharedPref.saveUsername(
+                                            _usernameController.text);
+                                      });
+                                      getProfileDetails(
+                                          _usernameController.text);
+                                    });
+                                  });
+                                },
+                                child: Ink(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        kPrimaryColor,
+                                        kSecondaryColor,
+                                        kAccentColor,
+                                        kGradientColor,
+                                      ],
+                                    ),
+                                  ),
+                                  child: Container(
+                                    constraints: const BoxConstraints(
+                                        minWidth: 400, minHeight: 60),
+                                    child: const Center(
+                                        child: Text("Log In",
+                                            style: TextStyle(fontSize: 20))),
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  elevation: 0,
+                                  primary: Colors.white,
+                                ),
+                              )
                       ],
                     ),
                   ),
           ),
-        ));
+        ),
+      ),
+    );
   }
 }

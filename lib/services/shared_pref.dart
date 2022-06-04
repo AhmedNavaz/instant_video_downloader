@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:instant_video_downloader/models/post.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SharedPref extends GetxController {
+class SharedPref {
   SharedPref._();
   static final SharedPref _instance = SharedPref._();
   factory SharedPref() => _instance;
@@ -49,5 +49,25 @@ class SharedPref extends GetxController {
       _instance.pref.setStringList('posts',
           _instance._postList!.map((e) => jsonEncode(e.toJson())).toList());
     });
+  }
+
+  Future<void> setDownloadLocation(String path) async {
+    _instance.pref.setString('downloadLocation', path);
+  }
+
+  Future<String?> getDownloadLocation() async {
+    return _instance.pref.getString('downloadLocation');
+  }
+
+  Future<void> saveUsername(String username) async {
+    _instance.pref.setString('username', username);
+  }
+
+  Future<String?> getUsername() async {
+    String? result = _instance.pref.getString('username');
+    if (result == null) {
+      return null;
+    }
+    return result;
   }
 }

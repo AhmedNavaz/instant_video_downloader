@@ -1,5 +1,6 @@
 class Post {
   String? id;
+  String? link;
   String? url;
   String? title;
   String? thumbnail;
@@ -9,6 +10,7 @@ class Post {
 
   Post({
     this.id,
+    this.link,
     this.url,
     this.title,
     this.thumbnail,

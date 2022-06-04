@@ -42,8 +42,10 @@ dependencies:
   shared_preferences: ^2.0.15
   numeral: ^2.0.1
   story_view: ^0.13.2
-  folder_picker: ^0.3.0
-  path_provider_ex: ^1.0.1
+  file_picker: ^4.6.1
+  firebase_analytics: ^9.1.9
+  firebase_core: ^1.17.1
+  url_launcher: ^6.1.2
 
 dev_dependencies:
   flutter_test:
